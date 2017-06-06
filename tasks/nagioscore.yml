@@ -1,0 +1,60 @@
+- name: Nagios - Include necessary vars
+  include_vars: "{{ item }}"
+  with_items:
+  - nagiosadminpasswd.yml
+
+- name: Nagios - Install EPEL Repo
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - epel-release
+    
+- name: Nagios - Install Nagios Packages
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - httpd
+    - mod_ssl
+    - mod_ldap
+    - firewalld
+    - nagios
+    - nagios-plugins-all
+    - nrpe
+    - nagios-plugins-nrpe
+    - python-passlib
+
+- name: Nagios - set nagiosadmin passwd
+  htpasswd:
+    path: /etc/nagios/passwd
+    name: nagiosadmin
+    password: "{{ nagiosadminpasswd }}"
+
+- name: Nagios - remove default website
+  file: state=absent path=/etc/httpd/conf.d/welcome.conf
+
+- name: Nagios - Enable Firewalld
+  systemd:
+    name: firewalld
+    enabled: yes
+    state: started
+    
+- name: Nagios - Enable HTTPD
+  systemd:
+    name: httpd
+    enabled: yes
+    state: started
+    
+- name: Nagios - Enable Nagios
+  systemd:
+    name: nagios
+    enabled: yes
+    state: restarted
+
+- name: Nagios - enable firewall for https
+  firewalld:
+    port: 443/tcp
+    permanent: true
+    state: enabled
+    immediate: true 
